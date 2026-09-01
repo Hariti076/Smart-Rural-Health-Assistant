@@ -1,0 +1,204 @@
+You are a senior full-stack developer and SIH (Smart India Hackathon) expert.
+
+I already have a working rural healthcare website. Your job is to UPGRADE it into a COMPLETE, CONNECTED healthcare system.
+
+DO NOT rebuild from scratch. Modify existing UI and logic.
+
+----------------------------------
+🎯 GOAL
+----------------------------------
+
+Convert the website into a real-world simulation of rural healthcare workflow.
+
+The system must clearly demonstrate:
+- Patient lifecycle
+- Role-based workflow
+- Rural usability
+- Healthcare continuity
+
+----------------------------------
+🔐 ROLE SYSTEM (MANDATORY)
+----------------------------------
+
+Implement 3 roles:
+1. HEALTH_WORKER (ASHA)
+2. DOCTOR
+3. ADMIN
+
+After login:
+- Redirect to role-specific dashboard
+
+----------------------------------
+🧭 ADD ROLE SELECTION PAGE
+----------------------------------
+
+Before login:
+Show:
+
+"Select Your Role"
+- ASHA Worker
+- Doctor
+- Admin
+
+Each leads to correct login
+
+----------------------------------
+👩‍⚕️ ASHA DASHBOARD (SIMPLIFY UI)
+----------------------------------
+
+Actions:
+- Register Patient
+- Start AI Triage
+- View Patients
+- Offline Sync Status (simulate)
+
+UI:
+- Large buttons
+- Minimal text
+- Mobile-friendly
+
+----------------------------------
+🧑 PATIENT FLOW (CRITICAL)
+----------------------------------
+
+Create a single unified flow:
+
+1. Register Patient
+2. Run Triage
+3. Store result
+4. Show next action:
+   - GREEN → Home care
+   - YELLOW → Teleconsult
+   - RED → Emergency referral
+
+----------------------------------
+🤖 AI TRIAGE UI
+----------------------------------
+
+- Symptom checklist
+- Submit button
+- Show:
+  - Severity badge (color-coded)
+  - Recommendation
+
+----------------------------------
+👨‍⚕️ DOCTOR DASHBOARD
+----------------------------------
+
+Show:
+- Incoming patients
+- Consultation panel
+- Patient history
+
+Actions:
+- Add diagnosis
+- Add prescription
+- Create referral
+
+----------------------------------
+🏥 REFERRAL SYSTEM (VERY IMPORTANT)
+----------------------------------
+
+Add:
+
+- Create referral
+- Assign hospital
+- Generate Referral ID
+
+Status:
+- Pending
+- Accepted
+- Completed
+
+Show as progress tracker
+
+----------------------------------
+📊 ADMIN DASHBOARD (HIGH IMPACT)
+----------------------------------
+
+Add charts:
+
+- Total patients
+- Triage distribution
+- Referrals completed
+- Daily consultations
+
+Also show:
+- Alerts (high-risk patients)
+
+----------------------------------
+📡 OFFLINE MODE (SIMULATED)
+----------------------------------
+
+Add UI indicators:
+
+- “Offline Mode”
+- “Pending Sync: X records”
+- “Sync Complete”
+
+(No real backend needed)
+
+----------------------------------
+🌐 MULTILINGUAL SUPPORT
+----------------------------------
+
+Add language toggle:
+- English
+- Hindi
+- Telugu
+
+----------------------------------
+🚑 EMERGENCY FLOW
+----------------------------------
+
+If RED:
+
+Show:
+- “Emergency Case”
+- Button:
+  - Call ambulance (mock)
+  - Notify hospital
+
+----------------------------------
+🎨 UI IMPROVEMENTS
+----------------------------------
+
+- Medical color system:
+  - Green / Yellow / Red
+- Clean dashboard cards
+- Mobile responsive
+- Simple layout for rural users
+
+----------------------------------
+🎬 DEMO FLOW (MUST WORK)
+----------------------------------
+
+Simulate this:
+
+1. ASHA logs in
+2. Registers patient
+3. Runs triage
+4. Doctor logs in
+5. Consults
+6. Creates referral
+7. Admin sees analytics update
+
+----------------------------------
+🏆 SIH KEYWORDS (ADD IN UI)
+----------------------------------
+
+- “Low connectivity support”
+- “AI-assisted triage”
+- “Improved referral tracking”
+- “Rural healthcare access”
+
+----------------------------------
+OUTPUT:
+----------------------------------
+
+- Updated UI pages
+- Role-based navigation
+- Complete connected workflow
+- Demo-ready system
+
+DO NOT give explanation. Give code-level structure and UI updates.

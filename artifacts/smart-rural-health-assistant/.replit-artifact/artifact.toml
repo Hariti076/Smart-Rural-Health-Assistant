@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Smart Rural Health Assistant"
+description = "A low-connectivity-friendly rural healthcare workflow app for ASHA workers, doctors, and administrators to register patients, triage symptoms, manage referrals, and monitor continuity of care."
+version = "1.0.0"
+id = "artifacts/smart-rural-health-assistant"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22407
+
+[services.development]
+run = "pnpm --filter @workspace/smart-rural-health-assistant run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/smart-rural-health-assistant", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/smart-rural-health-assistant/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22407"
+BASE_PATH = "/"
