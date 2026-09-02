@@ -53,6 +53,18 @@ const usePersisted = <T,>(key: string, initial: T) => {
   useEffect(() => localStorage.setItem(`srha-${key}`, JSON.stringify(value)), [key, value]);
   return [value, setValue] as const;
 };
+const isRoleId = (value: string | null): value is RoleId => value === 'asha' || value === 'doctor' || value === 'patient' || value === 'admin';
+const useRoleStorage = () => {
+  const [role, setRole] = useState<RoleId | null>(() => {
+    const storedRole = localStorage.getItem('role');
+    return isRoleId(storedRole) ? storedRole : null;
+  });
+  useEffect(() => {
+    if (role) localStorage.setItem('role', role);
+    else localStorage.removeItem('role');
+  }, [role]);
+  return [role, setRole] as const;
+};
 
 function StoreProvider({ children }: { children: ReactNode }) {
   const [patients, setPatients] = usePersisted('patients', seedPatients);
@@ -62,7 +74,7 @@ function StoreProvider({ children }: { children: ReactNode }) {
   const [syncRecords, setSyncRecords] = usePersisted('sync', seedSyncRecords);
   const [offline, setOffline] = usePersisted('offline', false);
   const [lastSynced, setLastSynced] = usePersisted('last-synced', 'Today, 08:42');
-  const [currentRole, setCurrentRole] = usePersisted<RoleId | null>('role', null);
+  const [currentRole, setCurrentRole] = useRoleStorage();
   const [language, setLanguage] = usePersisted<Language>('language', 'en');
   return <StoreContext.Provider value={{ patients, triages, consultations, referrals, syncRecords, offline, lastSynced, currentRole, language, setPatients, setTriages, setConsultations, setReferrals, setSyncRecords, setOffline, setLastSynced, setCurrentRole, setLanguage }}>{children}</StoreContext.Provider>;
 }
@@ -106,6 +118,12 @@ const useCopy = () => {
 };
 
 const roleById = (id: RoleId | null) => roles.find((role) => role.id === id) ?? roles[0];
+const roleDashboardPath = (role: RoleId) => {
+  if (role === 'doctor') return '/doctor-dashboard';
+  if (role === 'patient') return '/patient-dashboard';
+  if (role === 'admin') return '/admin-dashboard';
+  return '/asha';
+};
 const formatDate = (value: string) => new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value));
 const formatTime = (value: string) => new Intl.DateTimeFormat('en-IN', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
 const uid = (prefix: string) => `${prefix}-${Math.floor(Date.now() / 1000).toString().slice(-6)}`;
@@ -122,7 +140,7 @@ const sameDay = (first: string, second = new Date().toISOString()) => new Date(f
 function Logo({ compact = false }: { compact?: boolean }) {
   return <Link href="/" className="flex items-center gap-3 focus-ring rounded-xl" data-testid="link-brand">
     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-sm"><HeartPulse size={21} strokeWidth={2.4} /></span>
-    {!compact && <span><strong className="block text-[15px] tracking-[-.03em]">Sahaara</strong><small className="block text-[10px] uppercase tracking-[.16em] text-[hsl(var(--muted-foreground))]">Rural health companion</small></span>}
+    {!compact && <span><strong className="block text-[15px] tracking-[-.03em]">ArogyaSetu</strong><small className="block text-[10px] uppercase tracking-[.16em] text-[hsl(var(--muted-foreground))]">Rural Health Assistant</small></span>}
   </Link>;
 }
 
@@ -154,24 +172,26 @@ function SyncPill() {
 
 function SideNav({ role, onClose }: { role: Role; onClose?: () => void }) {
   const [location] = useLocation();
+  const { setCurrentRole } = useStore();
   const t = useCopy();
   const links = role.id === 'asha'
     ? [{ href: '/asha', label: t('dashboard'), icon: LayoutDashboard }, { href: '/asha/patients', label: t('patients'), icon: Users }, { href: '/asha/triage', label: t('triage'), icon: Activity }, { href: '/referrals', label: t('referrals'), icon: Send }, { href: '/offline', label: t('sync'), icon: CloudOff }]
     : role.id === 'doctor'
-      ? [{ href: '/doctor', label: t('dashboard'), icon: LayoutDashboard }, { href: '/doctor', label: t('consultations'), icon: Stethoscope }, { href: '/referrals', label: t('referrals'), icon: Send }, { href: '/offline', label: t('sync'), icon: CloudOff }]
-      : [{ href: '/admin', label: t('dashboard'), icon: LayoutDashboard }, { href: '/admin', label: t('analytics'), icon: Activity }, { href: '/referrals', label: t('referrals'), icon: Send }, { href: '/offline', label: t('sync'), icon: CloudOff }];
+      ? [{ href: '/doctor-dashboard', label: t('dashboard'), icon: LayoutDashboard }, { href: '/doctor-dashboard', label: t('consultations'), icon: Stethoscope }, { href: '/referrals', label: t('referrals'), icon: Send }, { href: '/offline', label: t('sync'), icon: CloudOff }]
+      : role.id === 'patient'
+        ? [{ href: '/patient-dashboard', label: t('dashboard'), icon: LayoutDashboard }, { href: '/referrals', label: t('referrals'), icon: Send }, { href: '/offline', label: t('sync'), icon: CloudOff }]
+        : [{ href: '/admin-dashboard', label: t('dashboard'), icon: LayoutDashboard }, { href: '/admin-dashboard', label: t('analytics'), icon: Activity }, { href: '/referrals', label: t('referrals'), icon: Send }, { href: '/offline', label: t('sync'), icon: CloudOff }];
   return <aside className="flex h-full w-[254px] flex-col bg-[#183f3a] px-4 py-5 text-[#e8f1e4]">
     <div className="mb-8 flex items-center justify-between px-2"><Logo /><button onClick={onClose} className="rounded-lg p-2 text-[#b9d2c8] hover:bg-white/10 md:hidden" aria-label="Close navigation" data-testid="button-close-nav"><X size={18} /></button></div>
     <div className="mb-5 rounded-xl border border-white/10 bg-white/[.06] p-3"><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f29a62] text-sm font-bold text-[#183f3a]">{initials(role.name)}</span><div className="min-w-0"><p className="truncate text-sm font-semibold">{role.name}</p><p className="truncate text-[11px] text-[#a8c5ba]">{role.title}</p></div></div></div>
     <nav className="space-y-1" aria-label="Primary navigation">{links.map(({ href, label, icon: Icon }, index) => <Link key={`${href}-${index}`} href={href} onClick={onClose} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${location === href ? 'bg-[#e8f1e4] text-[#183f3a]' : 'text-[#b9d2c8] hover:bg-white/10 hover:text-white'}`} data-testid={`link-nav-${label.replace(/\s/g, '-').toLowerCase()}`}><Icon size={18} />{label}</Link>)}</nav>
-    <div className="mt-auto space-y-3"><div className="rounded-xl bg-[#25554d] p-3"><div className="mb-1 flex items-center gap-2 text-xs font-semibold"><ShieldCheck size={15} className="text-[#f5b36a]" />Demo workspace</div><p className="text-[11px] leading-relaxed text-[#b9d2c8]">Synthetic records only. Never use for medical decisions.</p></div><Link href="/" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-[#b9d2c8] hover:bg-white/10 hover:text-white" data-testid="link-sign-out"><LogOut size={17} />Sign out</Link></div>
+     <div className="mt-auto space-y-3"><div className="rounded-xl bg-[#25554d] p-3"><div className="mb-1 flex items-center gap-2 text-xs font-semibold"><ShieldCheck size={15} className="text-[#f5b36a]" />Demo workspace</div><p className="text-[11px] leading-relaxed text-[#b9d2c8]">Synthetic records only. Never use for medical decisions.</p></div><Link href="/" onClick={() => { localStorage.removeItem('role'); setCurrentRole(null); }} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-[#b9d2c8] hover:bg-white/10 hover:text-white" data-testid="link-sign-out"><LogOut size={17} />Sign out</Link></div>
   </aside>;
 }
 
 function Shell({ children, title, eyebrow }: { children: ReactNode; title?: string; eyebrow?: string }) {
-  const { currentRole } = useStore();
   const [location] = useLocation();
-  const routeRole = location.startsWith('/doctor') ? 'doctor' : location.startsWith('/admin') ? 'admin' : 'asha';
+  const routeRole: RoleId = location.startsWith('/doctor') ? 'doctor' : location.startsWith('/patient') ? 'patient' : location.startsWith('/admin') ? 'admin' : 'asha';
   const role = roleById(routeRole);
   const [menu, setMenu] = useState(false);
   const t = useCopy();
@@ -214,8 +234,17 @@ function StatusBadge({ status }: { status: Severity | null }) {
 function RoleSelection() {
   const [, navigate] = useLocation();
   const { setCurrentRole } = useStore();
-  const choices = [{ id: 'asha' as RoleId, title: 'ASHA Worker', description: 'Register families, triage symptoms, keep care moving', icon: UserRound, tint: 'bg-[#fce6d4]' }, { id: 'doctor' as RoleId, title: 'Doctor', description: 'Review incoming cases and close the consultation loop', icon: Stethoscope, tint: 'bg-[#dcefed]' }, { id: 'admin' as RoleId, title: 'Administrator', description: 'See district-wide trends, alerts, and referral completion', icon: BriefcaseMedical, tint: 'bg-[#f8edcc]' }];
-  return <div className="min-h-[100dvh] bg-[#183f3a] text-[#e8f1e4]"><div className="mx-auto flex min-h-[100dvh] max-w-6xl flex-col px-5 py-6 md:px-10 md:py-9"><header className="flex items-center justify-between"><Logo /><LanguageSwitcher /></header><div className="grid flex-1 items-center gap-12 py-14 lg:grid-cols-[.82fr_1.18fr]"><div className="animate-rise"><Badge tone="teal" icon={<Wifi size={13} />}>Built for low-connectivity care</Badge><h1 className="mt-6 max-w-xl text-5xl font-bold leading-[.97] tracking-[-.065em] md:text-7xl">Care that keeps moving, even when the signal doesn’t.</h1><p className="mt-6 max-w-md text-base leading-relaxed text-[#b9d2c8]">Sahaara connects village-level care with the people who can act next. A dependable field companion for Krishna District.</p><div className="mt-8 flex flex-wrap gap-3 text-xs font-semibold text-[#b9d2c8]"><span className="flex items-center gap-2"><Check size={14} className="text-[#f5b36a]" />AI-assisted triage</span><span className="flex items-center gap-2"><Check size={14} className="text-[#f5b36a]" />Improved referral tracking</span><span className="flex items-center gap-2"><Check size={14} className="text-[#f5b36a]" />Rural healthcare access</span></div></div><div className="animate-rise-2"><p className="mb-4 text-xs font-bold uppercase tracking-[.18em] text-[#9fc6b5]">Choose your workspace</p><div className="space-y-3">{choices.map(({ id, title, description, icon: Icon, tint }) => <button key={id} onClick={() => { setCurrentRole(id); navigate('/login'); }} className="lift focus-ring group flex w-full items-center gap-4 rounded-2xl border border-white/10 bg-white/[.07] p-4 text-left hover:bg-white/[.13] md:p-5" data-testid={`button-role-${id}`}><span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${tint} text-[#183f3a]`}><Icon size={23} /></span><span className="min-w-0 flex-1"><strong className="block text-base">{title}</strong><span className="mt-1 block text-sm text-[#abc8bb]">{description}</span></span><ArrowRight size={19} className="text-[#9fc6b5] transition-transform group-hover:translate-x-1" /></button>)}</div><p className="mt-5 text-center text-xs text-[#8eb3a5]">Demo environment · synthetic records only</p></div></div><footer className="flex flex-wrap justify-between gap-3 border-t border-white/10 pt-5 text-xs text-[#8eb3a5]"><span>Krishna District Health Mission</span><span>Last design principle: no family left behind.</span></footer></div></div>;
+  const choices = [{ id: 'asha' as RoleId, title: 'ASHA Worker', description: 'Register families, triage symptoms, keep care moving', icon: UserRound, tint: 'bg-[#fce6d4]' }, { id: 'doctor' as RoleId, title: 'Doctor', description: 'Review incoming cases and close the consultation loop', icon: Stethoscope, tint: 'bg-[#dcefed]' }, { id: 'patient' as RoleId, title: 'Patient', description: 'View your care journey and shared health updates', icon: HeartPulse, tint: 'bg-[#dcefed]' }, { id: 'admin' as RoleId, title: 'Administrator', description: 'See district-wide trends, alerts, and referral completion', icon: BriefcaseMedical, tint: 'bg-[#f8edcc]' }];
+  return <div className="min-h-[100dvh] bg-[#183f3a] text-[#e8f1e4]"><div className="mx-auto flex min-h-[100dvh] max-w-6xl flex-col px-5 py-6 md:px-10 md:py-9"><header className="flex items-center justify-between"><Logo /><LanguageSwitcher /></header><div className="grid flex-1 items-center gap-12 py-14 lg:grid-cols-[.82fr_1.18fr]"><div className="animate-rise"><Badge tone="teal" icon={<Wifi size={13} />}>Built for low-connectivity care</Badge><h1 className="mt-6 max-w-xl text-5xl font-bold leading-[.97] tracking-[-.065em] md:text-7xl">Care that keeps moving, even when the signal doesn’t.</h1><p className="mt-6 max-w-md text-base leading-relaxed text-[#b9d2c8]">ArogyaSetu Rural Health Assistant connects village-level care with the people who can act next. A dependable field companion for Krishna District.</p><div className="mt-8 flex flex-wrap gap-3 text-xs font-semibold text-[#b9d2c8]"><span className="flex items-center gap-2"><Check size={14} className="text-[#f5b36a]" />AI-assisted triage</span><span className="flex items-center gap-2"><Check size={14} className="text-[#f5b36a]" />Improved referral tracking</span><span className="flex items-center gap-2"><Check size={14} className="text-[#f5b36a]" />Rural healthcare access</span></div></div><div className="animate-rise-2"><p className="mb-4 text-xs font-bold uppercase tracking-[.18em] text-[#9fc6b5]">Choose your workspace</p><div className="space-y-3">{choices.map(({ id, title, description, icon: Icon, tint }) => <button key={id} onClick={() => { localStorage.setItem('role', id); setCurrentRole(id); navigate('/login'); }} className="lift focus-ring group flex w-full items-center gap-4 rounded-2xl border border-white/10 bg-white/[.07] p-4 text-left hover:bg-white/[.13] md:p-5" data-testid={`button-role-${id}`}><span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${tint} text-[#183f3a]`}><Icon size={23} /></span><span className="min-w-0 flex-1"><strong className="block text-base">{title}</strong><span className="mt-1 block text-sm text-[#abc8bb]">{description}</span></span><ArrowRight size={19} className="text-[#9fc6b5] transition-transform group-hover:translate-x-1" /></button>)}</div><p className="mt-5 text-center text-xs text-[#8eb3a5]">Demo environment · synthetic records only</p></div></div><footer className="flex flex-wrap justify-between gap-3 border-t border-white/10 pt-5 text-xs text-[#8eb3a5]"><span>Krishna District Health Mission</span><span>Last design principle: no family left behind.</span></footer></div></div>;
+}
+
+function RoleEntry() {
+  const { currentRole } = useStore();
+  const [, navigate] = useLocation();
+  useEffect(() => {
+    if (currentRole) navigate(roleDashboardPath(currentRole));
+  }, [currentRole, navigate]);
+  return currentRole ? null : <RoleSelection />;
 }
 
 function LoginPageContent({ role, setCurrentRole, t }: { role: Role; setCurrentRole: Dispatch<SetStateAction<RoleId | null>>; t: (key: CopyKey) => string }) {
@@ -225,7 +254,10 @@ function LoginPageContent({ role, setCurrentRole, t }: { role: Role; setCurrentR
   const [error, setError] = useState('');
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (username === role.username && password === role.password) navigate(`/${role.id}`);
+    if (username === role.username && password === role.password) {
+      localStorage.setItem('role', role.id);
+      navigate(roleDashboardPath(role.id));
+    }
     else setError('Use the demo credentials shown below.');
   };
   return <div className="min-h-[100dvh] bg-[#f4f0e6]"><div className="mx-auto grid min-h-[100dvh] max-w-6xl lg:grid-cols-[.85fr_1.15fr]"><div className="hidden flex-col justify-between bg-[#183f3a] p-10 text-[#e8f1e4] lg:flex"><Logo /><div><Badge tone="teal" icon={<ShieldCheck size={13} />}>Secure demo access</Badge><h1 className="mt-6 text-5xl font-bold leading-[.98] tracking-[-.06em]">Good care starts with a clear handover.</h1><p className="mt-6 max-w-sm leading-relaxed text-[#b9d2c8]">Your role decides what you see next. Every update stays visible across the care team, including when it was captured offline.</p></div><p className="text-xs text-[#8eb3a5]">Sahaara / Krishna District · Frontline care continuity</p></div><div className="flex flex-col p-5 md:p-10"><div className="flex items-center justify-between lg:justify-end"><div className="lg:hidden"><Logo /></div><LanguageSwitcher /></div><div className="m-auto w-full max-w-md py-12"><button onClick={() => { setCurrentRole(null); navigate('/'); }} className="mb-9 flex items-center gap-2 text-sm font-semibold text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]" data-testid="button-change-role"><ArrowLeft size={16} />Change role</button><Badge tone="teal" icon={<UserRound size={13} />}>{role.title}</Badge><h2 className="mt-4 text-3xl font-bold tracking-[-.05em]">{t('signIn')}</h2><p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">{role.name} · {role.facility}</p><form onSubmit={submit} className="mt-8 space-y-5" autoComplete="on"><label className="block text-sm font-semibold">{t('username')}<input autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} className="focus-ring mt-2 h-12 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--card))] px-4 outline-none" data-testid="input-username" /></label><label className="block text-sm font-semibold">{t('password')}<input autoComplete="current-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="focus-ring mt-2 h-12 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--card))] px-4 outline-none" data-testid="input-password" /></label>{error && <p className="flex items-center gap-2 rounded-xl bg-[#fbe2de] px-3 py-3 text-sm font-semibold text-[#a4382f]" data-testid="status-login-error"><AlertCircle size={16} />{error}</p>}<PrimaryButton type="submit" testId="button-sign-in">{t('continue')} <ArrowRight size={16} /></PrimaryButton></form><div className="mt-8 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4"><p className="text-xs font-bold uppercase tracking-[.14em] text-[hsl(var(--muted-foreground))]">Demo credentials</p><p className="mono mt-3 text-xs">{role.username} <span className="text-[hsl(var(--muted-foreground))]">/</span> {role.password}</p><p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">No real patient information is used.</p></div></div></div></div></div>;
@@ -249,6 +281,7 @@ function AshaDashboard() {
   const urgent = patients.filter((patient) => patient.triageStatus === 'red' || patient.triageStatus === 'yellow');
   return <Shell title="Good morning, Meena" eyebrow="ASHA worker / Kankipadu field unit"><div className="animate-rise"><div className="mb-7 rounded-3xl bg-[#e0eee2] p-5 md:p-7"><div className="flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><Badge tone="green" icon={<CheckCircle2 size={13} />}>Field shift active</Badge><h2 className="mt-4 max-w-xl text-3xl font-bold leading-tight tracking-[-.05em] md:text-4xl">Three people need a clear next step today.</h2><p className="mt-3 max-w-lg text-sm leading-relaxed text-[#467263]">Your latest patient records are safely stored. Continue care from where you are, with or without a signal.</p></div><div className="flex shrink-0 flex-wrap gap-2"><PrimaryButton href="/asha/register" testId="button-register-patient"><Plus size={17} />Register patient</PrimaryButton><PrimaryButton href="/asha/triage" variant="outline" testId="button-open-triage"><Activity size={17} />Run triage</PrimaryButton></div></div></div><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Metric label="Patients visited" value={today.length + 12} detail="+4 from yesterday" icon={Users} /><Metric label="Needs doctor today" value={urgent.length} detail="Yellow and red triage" icon={Bell} tone="orange" /><Metric label="Open referrals" value={referrals.filter((item) => item.status !== 'completed').length} detail="Across your villages" icon={Send} tone="red" /><Metric label="Pending sync" value={syncRecords.filter((item) => item.status === 'pending').length} detail="Device queue" icon={CloudOff} tone="cream" /></div><div className="mt-8 grid gap-8 xl:grid-cols-[1.4fr_.8fr]"><div><SectionTitle title="Today’s priorities" detail="Sorted by urgency and last activity" action={<Link href="/asha/patients" className="text-xs font-bold text-[hsl(var(--primary))]" data-testid="link-view-all-patients">View all patients <ArrowRight size={13} className="ml-1 inline" /></Link>} /><div className="surface overflow-hidden rounded-2xl">{urgent.slice(0, 4).map((patient) => <PatientRow key={patient.id} patient={patient} />)}{urgent.length === 0 && <EmptyState icon={CheckCircle2} title="No urgent cases" detail="Your priority list is clear for now." />}</div></div><div><SectionTitle title="Quick capture" detail="Common field actions" /><div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1"><QuickAction href="/asha/register" icon={FilePlus2} title="New patient" detail="Start a record" /><QuickAction href="/asha/triage" icon={Activity} title="Symptom check" detail="Decision support" /><QuickAction href="/offline" icon={CloudOff} title="Sync center" detail="Review device queue" /></div></div></div><div className="mt-8"><SectionTitle title="Care continuity" detail="What the network knows about your work" /><div className="grid gap-3 md:grid-cols-3"><Insight icon={Wifi} title="Low connectivity support" detail="Records save to this device first, then sync when signal returns." /><Insight icon={Zap} title="AI-assisted triage" detail="A short checklist helps you choose a safe escalation path." /><Insight icon={Send} title="Improved referral tracking" detail="Follow a patient from first concern to completed referral." /></div></div></div></Shell>;
 }
+function PatientDashboard() { return <AshaDashboard />; }
 
 function QuickAction({ href, icon: Icon, title, detail }: { href: string; icon: typeof Plus; title: string; detail: string }) { return <Link href={href} className="surface lift flex items-center gap-3 rounded-2xl p-4" data-testid={`link-quick-${title.toLowerCase().replace(/\s/g, '-')}`}><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fce6d4] text-[#a25528]"><Icon size={18} /></span><span><strong className="block text-sm">{title}</strong><small className="mt-1 block text-xs text-[hsl(var(--muted-foreground))]">{detail}</small></span><ArrowRight size={15} className="ml-auto text-[hsl(var(--muted-foreground))]" /></Link>; }
 function Insight({ icon: Icon, title, detail }: { icon: typeof Wifi; title: string; detail: string }) { return <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4"><Icon size={18} className="text-[hsl(var(--primary))]" /><p className="mt-4 text-sm font-bold">{title}</p><p className="mt-1 text-xs leading-relaxed text-[hsl(var(--muted-foreground))]">{detail}</p></div>; }
@@ -419,7 +452,7 @@ function OfflinePage() {
 }
 
 function AppRouter() {
-  return <Switch><Route path="/" component={RoleSelection} /><Route path="/login" component={LoginPage} /><Route path="/asha/register" component={RegisterPage} /><Route path="/asha/triage" component={TriagePage} /><Route path="/asha/patients" component={PatientsPage} /><Route path="/asha" component={AshaDashboard} /><Route path="/doctor/patient/:id" component={DoctorPatientPage} /><Route path="/doctor" component={DoctorEhrDashboard} /><Route path="/admin" component={AdminDashboard} /><Route path="/referrals" component={ReferralsPage} /><Route path="/offline" component={OfflinePage} /><Route><NotFound /></Route></Switch>;
+  return <Switch><Route path="/" component={RoleEntry} /><Route path="/login" component={LoginPage} /><Route path="/asha/register" component={RegisterPage} /><Route path="/asha/triage" component={TriagePage} /><Route path="/asha/patients" component={PatientsPage} /><Route path="/asha" component={AshaDashboard} /><Route path="/doctor/patient/:id" component={DoctorPatientPage} /><Route path="/doctor-dashboard" component={DoctorEhrDashboard} /><Route path="/doctor" component={DoctorEhrDashboard} /><Route path="/patient-dashboard" component={PatientDashboard} /><Route path="/admin-dashboard" component={AdminDashboard} /><Route path="/admin" component={AdminDashboard} /><Route path="/referrals" component={ReferralsPage} /><Route path="/offline" component={OfflinePage} /><Route><NotFound /></Route></Switch>;
 }
 
 function NotFound() { return <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(var(--background))] p-6"><div className="surface max-w-md rounded-2xl p-8 text-center"><XCircle size={32} className="mx-auto text-[hsl(var(--destructive))]" /><h1 className="mt-4 text-2xl font-bold">That page is not in this care path.</h1><p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Return to the role selection to continue the demo.</p><PrimaryButton href="/" testId="button-return-home">Return home</PrimaryButton></div></div>; }
