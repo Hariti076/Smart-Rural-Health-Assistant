@@ -1,4 +1,4 @@
-export type RoleId = 'asha' | 'doctor' | 'patient' | 'admin';
+export type RoleId = 'asha' | 'doctor' | 'admin';
 export type Risk = 'low' | 'medium' | 'high';
 export type Severity = 'green' | 'yellow' | 'red';
 export type ReferralStatus = 'pending' | 'accepted' | 'completed';
@@ -57,6 +57,7 @@ export type Patient = {
   vitals: Vital[];
   history: MedicalHistory;
   visits: Visit[];
+  referrals?: Referral[];
 };
 
 export type TriageResult = {
@@ -85,6 +86,7 @@ export type Referral = {
   patientId: string;
   hospital: string;
   reason: string;
+  notes?: string;
   status: ReferralStatus;
   assignedBy: string;
   createdAt: string;
@@ -101,7 +103,6 @@ export type SyncRecord = {
 export const roles: Role[] = [
   { id: 'asha', name: 'Meena Kumari', title: 'ASHA Worker', facility: 'Kankipadu field unit', username: 'meena', password: 'demo123' },
   { id: 'doctor', name: 'Dr. Ravi Prakash', title: 'Medical Officer', facility: 'Vijayawada Rural PHC', username: 'ravi', password: 'demo123' },
-  { id: 'patient', name: 'Ravi Kumar', title: 'Patient', facility: 'Kankipadu care network', username: 'ravi.patient', password: 'demo123' },
   { id: 'admin', name: 'Anita Rao', title: 'District Administrator', facility: 'Krishna District Health Office', username: 'anita', password: 'demo123' },
 ];
 
