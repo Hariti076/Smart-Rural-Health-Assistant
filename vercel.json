@@ -1,0 +1,7 @@
+{
+  "buildCommand": "pnpm --filter @workspace/smart-rural-health-assistant build",
+  "outputDirectory": "artifacts/smart-rural-health-assistant/dist/public",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

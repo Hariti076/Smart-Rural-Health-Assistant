@@ -1,0 +1,8 @@
+[build]
+  publish = "artifacts/smart-rural-health-assistant/dist/public"
+  command = "pnpm --filter @workspace/smart-rural-health-assistant build"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

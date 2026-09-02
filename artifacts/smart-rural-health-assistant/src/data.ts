@@ -2,6 +2,9 @@ export type RoleId = 'asha' | 'doctor' | 'admin';
 export type Risk = 'low' | 'medium' | 'high';
 export type Severity = 'green' | 'yellow' | 'red';
 export type ReferralStatus = 'pending' | 'accepted' | 'completed';
+
+export const isRoleId = (value: unknown): value is RoleId =>
+  value === 'doctor' || value === 'asha' || value === 'admin';
 export type Vital = {
   recordedAt: string;
   bpSystolic: number;
